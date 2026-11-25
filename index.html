@@ -29,6 +29,7 @@ label.o input{accent-color:var(--ac);width:18px;height:18px;margin:0}
 .scale input{position:absolute;opacity:0;pointer-events:none}
 .ends{display:flex;justify-content:space-between;color:var(--mu);font-size:13px;margin-top:6px}
 textarea{width:100%;min-height:96px;padding:12px;border:1px solid var(--bd);border-radius:10px;font:inherit;resize:vertical;background:#fff;color:var(--tx)}
+#nombre{width:100%;padding:12px;border:1px solid var(--bd);border-radius:10px;font:inherit;background:#fff;color:var(--tx)}
 button{margin-top:26px;width:100%;padding:14px;border:0;border-radius:10px;background:var(--ac);color:#fff;font:600 16px inherit;font-family:inherit;cursor:pointer}
 button:disabled{opacity:.6}
 .end{text-align:center;padding:60px 0}
@@ -42,6 +43,7 @@ button:disabled{opacity:.6}
 <h1>Encuesta sobre compra de segunda mano</h1>
 <p class="sub">Son 12 preguntas rápidas y es anónima. ¡Gracias por ayudarnos!</p>
 <div class="bar"><div><i id="pb"></i></div></div>
+<section class="q" id="nm"><h2>Tu nombre</h2><p class="hint">Escribe tu nombre o un apodo.</p><input id="nombre" type="text" maxlength="60" autocomplete="given-name"></section>
 <form id="f" onsubmit="return false"></form>
 <button id="send">Enviar respuestas</button>
 <div class="end" id="end" hidden></div>
@@ -62,7 +64,9 @@ const Q=[
 {id:"q12",t:"¿Quieres añadir algo?",h:"Es opcional.",type:"text"}
 ];
 const f=document.getElementById("f"),pb=document.getElementById("pb"),send=document.getElementById("send"),end=document.getElementById("end");
+const CLAVE="PEGA_AQUI_TU_CLAVE";
 const A={};
+document.getElementById("nombre").oninput=()=>document.getElementById("nm").classList.remove("err");
 Q.forEach((q,i)=>{
  const d=document.createElement("section");d.className="q";d.id=q.id;
  const h=document.createElement("h2");h.textContent=(i+1)+". "+q.t;d.append(h);
@@ -95,6 +99,9 @@ f.addEventListener("change",e=>{
 let sent=false;
 send.onclick=async()=>{
  if(sent)return;
+ const nm=document.getElementById("nombre").value.trim();
+ document.getElementById("nm").classList.toggle("err",!nm);
+ if(!nm){document.getElementById("nm").scrollIntoView({behavior:"smooth",block:"center"});return}
  const need=no()?[Q[0]]:req;
  const miss=need.filter(q=>!(A[q.id]&&A[q.id].length));
  need.forEach(q=>document.getElementById(q.id).classList.toggle("err",miss.includes(q)));
@@ -102,16 +109,17 @@ send.onclick=async()=>{
  sent=true;send.disabled=true;send.textContent="Enviando…";
  let ok=false;
  try{
-  const db=await claude.use("db");
-  if(db){const id=Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-   await db.collection("respuestas").doc(id).set({...A,fecha:new Date().toISOString()});ok=true}
+  const body={access_key:CLAVE,subject:"Respuesta encuesta Threadbare",nombre:nm};
+  Q.forEach((q,i)=>{if(A[q.id]!==undefined&&A[q.id].length)body[(i+1)+". "+q.t]=[].concat(A[q.id]).join(", ")});
+  const r=await fetch("https://api.web3forms.com/submit",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(body)});
+  const j=await r.json();ok=j.success===true;
  }catch(e){ok=false}
  f.hidden=true;send.hidden=true;document.querySelector(".bar").hidden=true;end.hidden=false;
  const h=document.createElement("h2"),p=document.createElement("p");
  if(ok){h.textContent="¡Gracias!";p.textContent=no()?"Esta encuesta es solo para gente que compra de segunda mano online, pero gracias por entrar.":"Tus respuestas se han enviado."}
  else{h.textContent="No se han podido guardar";p.textContent="Copia tus respuestas y mándalas a quien te pasó la encuesta.";
   const b=document.createElement("button");b.textContent="Copiar mis respuestas";
-  b.onclick=()=>{navigator.clipboard.writeText(Q.map((q,i)=>(i+1)+". "+q.t+" → "+([].concat(A[q.id]||"-").join(", "))).join("\n")).then(()=>b.textContent="¡Copiado!").catch(()=>{})};
+  b.onclick=()=>{navigator.clipboard.writeText("Nombre: "+nm+"\n"+Q.map((q,i)=>(i+1)+". "+q.t+" → "+([].concat(A[q.id]||"-").join(", "))).join("\n")).then(()=>b.textContent="¡Copiado!").catch(()=>{})};
   end.append(h,p,b);return}
  end.append(h,p)};
 </script>
