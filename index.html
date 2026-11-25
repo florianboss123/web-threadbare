@@ -41,11 +41,12 @@ button:disabled{opacity:.6}
 <body>
 <main>
 <h1>Encuesta sobre compra de segunda mano</h1>
-<p class="sub">Son 12 preguntas rápidas.</p>
-<div class="bar"><div><i id="pb"></i></div></div>
-<section class="q" id="nm"><h2>Tu nombre</h2><p class="hint">Escribe tu nombre o un apodo.</p><input id="nombre" type="text" maxlength="60" autocomplete="given-name"></section>
-<form id="f" onsubmit="return false"></form>
-<button id="send">Enviar respuestas</button>
+<p class="sub">Son 12 preguntas rápidas. ¡Gracias por ayudarnos!</p>
+<div class="bar" hidden><div><i id="pb"></i></div></div>
+<section class="q" id="nm"><h2>Tu nombre</h2><p class="hint">Escribe tu nombre para empezar.</p><input id="nombre" type="text" maxlength="60" autocomplete="given-name"></section>
+<button id="go">Continuar</button>
+<form id="f" onsubmit="return false" hidden></form>
+<button id="send" hidden>Enviar respuestas</button>
 <div class="end" id="end" hidden></div>
 </main>
 <script>
@@ -64,7 +65,7 @@ const Q=[
 {id:"q12",t:"¿Quieres añadir algo?",h:"Es opcional.",type:"text"}
 ];
 const f=document.getElementById("f"),pb=document.getElementById("pb"),send=document.getElementById("send"),end=document.getElementById("end");
-const CLAVE=14020c51-6f29-4014-b05f-3a5c5baee039;
+const CLAVE="PEGA_AQUI_TU_CLAVE";
 const A={};
 document.getElementById("nombre").oninput=()=>document.getElementById("nm").classList.remove("err");
 Q.forEach((q,i)=>{
@@ -96,6 +97,12 @@ f.addEventListener("change",e=>{
  document.getElementById(q.id).classList.remove("err");
  if(q.id==="q1")Q.slice(1).forEach(x=>document.getElementById(x.id).hidden=no());
  upd()});
+const go=document.getElementById("go"),nmS=document.getElementById("nm"),nmI=document.getElementById("nombre");
+function empezar(){
+ if(!nmI.value.trim()){nmS.classList.add("err");nmI.focus();return}
+ nmS.hidden=true;go.hidden=true;document.querySelector(".bar").hidden=false;f.hidden=false;send.hidden=false;window.scrollTo({top:0})}
+go.onclick=empezar;
+nmI.addEventListener("keydown",e=>{if(e.key==="Enter")empezar()});
 let sent=false;
 send.onclick=async()=>{
  if(sent)return;
