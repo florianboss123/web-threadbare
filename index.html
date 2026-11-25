@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Encuesta sobre compra de segunda mano</title>
+<style>
+:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--ac:#1f6f5c;--bd:#e3e6ea;--tx:#1a1d21;--mu:#5f6670}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:640px;margin:0 auto;padding:28px 18px 64px}
+h1{font-size:26px;line-height:1.2;margin:0 0 8px}
+.sub{color:var(--mu);margin:0 0 20px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:#fff;padding:10px 0;z-index:5}
+.bar div{height:6px;background:var(--bd);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ac);transition:width .25s}
+.q{padding:22px 0;border-bottom:1px solid var(--bd)}
+.q h2{font-size:18px;margin:0 0 4px}
+.hint{color:var(--mu);font-size:14px;margin:0 0 10px}
+.q.err h2{color:#b3261e}
+.q.err .hint:after{content:" · Falta responder";color:#b3261e}
+label.o{display:flex;gap:10px;align-items:center;padding:11px 14px;margin-top:8px;border:1px solid var(--bd);border-radius:10px;cursor:pointer}
+label.o:has(input:checked){border-color:var(--ac);background:#eef7f4}
+label.o input{accent-color:var(--ac);width:18px;height:18px;margin:0}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px}
+.scale label{display:flex;justify-content:center;padding:12px 0;border:1px solid var(--bd);border-radius:10px;cursor:pointer;font-weight:600}
+.scale label:has(input:checked){background:var(--ac);color:#fff;border-color:var(--ac)}
+.scale input{position:absolute;opacity:0;pointer-events:none}
+.ends{display:flex;justify-content:space-between;color:var(--mu);font-size:13px;margin-top:6px}
+textarea{width:100%;min-height:96px;padding:12px;border:1px solid var(--bd);border-radius:10px;font:inherit;resize:vertical;background:#fff;color:var(--tx)}
+button{margin-top:26px;width:100%;padding:14px;border:0;border-radius:10px;background:var(--ac);color:#fff;font:600 16px inherit;font-family:inherit;cursor:pointer}
+button:disabled{opacity:.6}
+.end{text-align:center;padding:60px 0}
+.end h2{font-size:24px}
+.end button{background:#fff;color:var(--ac);border:1px solid var(--ac);width:auto;padding:10px 18px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<h1>Encuesta sobre compra de segunda mano</h1>
+<p class="sub">Son 12 preguntas rápidas y es anónima. ¡Gracias por ayudarnos!</p>
+<div class="bar"><div><i id="pb"></i></div></div>
+<form id="f" onsubmit="return false"></form>
+<button id="send">Enviar respuestas</button>
+<div class="end" id="end" hidden></div>
+</main>
+<script>
+const Q=[
+{id:"q1",t:"¿Has comprado algo de segunda mano por internet en el último año?",type:"one",o:["Sí","No"]},
+{id:"q2",t:"¿Qué edad tienes?",type:"one",o:["Menos de 18","18-24","25-30","31-35","Más de 35"]},
+{id:"q3",t:"¿Dónde vives?",type:"one",o:["Vitoria-Gasteiz","Resto de Álava","Otro sitio"]},
+{id:"q4",t:"¿Qué webs o apps usas para comprar?",h:"Puedes marcar varias.",type:"many",max:9,o:["Wallapop","Vinted","Milanuncios","eBay","Facebook Marketplace","Otras"]},
+{id:"q5",t:"¿Cada cuánto compras de segunda mano?",type:"one",o:["Cada semana","Una o dos veces al mes","Menos de una vez al mes"]},
+{id:"q6",t:"¿Qué compras más?",h:"Marca hasta 3.",type:"many",max:3,o:["Ropa y zapatos","Muebles","Móviles y tecnología","Deporte","Cosas para la casa","Libros y juegos"]},
+{id:"q7",t:"¿En cuántas apps o webs buscas lo mismo?",type:"one",o:["En 1","En 2","En 3","En 4 o más"]},
+{id:"q8",t:"¿Qué es lo que más te molesta al buscar?",type:"one",o:["Pierdo mucho tiempo","Salen anuncios repetidos","Los artículos están muy lejos","Ya está vendido cuando contacto","Me da miedo que me estafen"]},
+{id:"q9",t:"¿Te gustaría una web que busque en todas las apps a la vez?",type:"scale",l:["Nada","Muchísimo"]},
+{id:"q10",t:"¿Qué te gustaría que tuviera?",h:"Marca hasta 3.",type:"many",max:3,o:["Buscar en todas las webs a la vez","Elegir la distancia","Mapa con los artículos","Avisos cuando se sube algo que busco","Comparar precios","Ver solo las mejores ofertas"]},
+{id:"q11",t:"¿Cuánto pagarías al mes por recibir avisos de nuevos artículos?",type:"one",o:["Nada","Hasta 1 €","Entre 1 € y 3 €","Entre 3 € y 5 €","Más de 5 €"]},
+{id:"q12",t:"¿Quieres añadir algo?",h:"Es opcional.",type:"text"}
+];
+const f=document.getElementById("f"),pb=document.getElementById("pb"),send=document.getElementById("send"),end=document.getElementById("end");
+const A={};
+Q.forEach((q,i)=>{
+ const d=document.createElement("section");d.className="q";d.id=q.id;
+ const h=document.createElement("h2");h.textContent=(i+1)+". "+q.t;d.append(h);
+ if(q.h){const p=document.createElement("p");p.className="hint";p.textContent=q.h;d.append(p)}
+ if(q.type==="text"){const t=document.createElement("textarea");t.oninput=()=>{A[q.id]=t.value.trim()};d.append(t)}
+ else if(q.type==="scale"){
+  const s=document.createElement("div");s.className="scale";
+  for(let n=1;n<=5;n++){const l=document.createElement("label");const r=document.createElement("input");r.type="radio";r.name=q.id;r.value=n;l.append(r,String(n));s.append(l)}
+  const e=document.createElement("div");e.className="ends";e.innerHTML="<span></span><span></span>";
+  e.children[0].textContent="1 = "+q.l[0];e.children[1].textContent="5 = "+q.l[1];
+  d.append(s,e)}
+ else q.o.forEach(o=>{
+  const l=document.createElement("label");l.className="o";
+  const r=document.createElement("input");r.type=q.type==="many"?"checkbox":"radio";r.name=q.id;r.value=o;
+  const sp=document.createElement("span");sp.textContent=o;l.append(r,sp);d.append(l)});
+ f.append(d)});
+const req=Q.filter(q=>q.type!=="text");
+const no=()=>A.q1==="No";
+function upd(){const need=no()?[Q[0]]:req;const n=need.filter(q=>A[q.id]&&A[q.id].length).length;pb.style.width=(n/need.length*100)+"%"}
+f.addEventListener("change",e=>{
+ const r=e.target,q=Q.find(x=>x.id===r.name);if(!q)return;
+ if(q.type==="many"){
+  const c=[...f.querySelectorAll('input[name="'+q.id+'"]:checked')];
+  if(c.length>q.max){r.checked=false;return}
+  A[q.id]=c.map(x=>x.value)}
+ else A[q.id]=r.value;
+ document.getElementById(q.id).classList.remove("err");
+ if(q.id==="q1")Q.slice(1).forEach(x=>document.getElementById(x.id).hidden=no());
+ upd()});
+let sent=false;
+send.onclick=async()=>{
+ if(sent)return;
+ const need=no()?[Q[0]]:req;
+ const miss=need.filter(q=>!(A[q.id]&&A[q.id].length));
+ need.forEach(q=>document.getElementById(q.id).classList.toggle("err",miss.includes(q)));
+ if(miss.length){document.getElementById(miss[0].id).scrollIntoView({behavior:"smooth",block:"center"});return}
+ sent=true;send.disabled=true;send.textContent="Enviando…";
+ let ok=false;
+ try{
+  const db=await claude.use("db");
+  if(db){const id=Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+   await db.collection("respuestas").doc(id).set({...A,fecha:new Date().toISOString()});ok=true}
+ }catch(e){ok=false}
+ f.hidden=true;send.hidden=true;document.querySelector(".bar").hidden=true;end.hidden=false;
+ const h=document.createElement("h2"),p=document.createElement("p");
+ if(ok){h.textContent="¡Gracias!";p.textContent=no()?"Esta encuesta es solo para gente que compra de segunda mano online, pero gracias por entrar.":"Tus respuestas se han enviado."}
+ else{h.textContent="No se han podido guardar";p.textContent="Copia tus respuestas y mándalas a quien te pasó la encuesta.";
+  const b=document.createElement("button");b.textContent="Copiar mis respuestas";
+  b.onclick=()=>{navigator.clipboard.writeText(Q.map((q,i)=>(i+1)+". "+q.t+" → "+([].concat(A[q.id]||"-").join(", "))).join("\n")).then(()=>b.textContent="¡Copiado!").catch(()=>{})};
+  end.append(h,p,b);return}
+ end.append(h,p)};
+</script>
+</body>
+</html>
