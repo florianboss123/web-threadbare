@@ -43,11 +43,12 @@ button:disabled{opacity:.6}
 <h1>Encuesta sobre compra de segunda mano</h1>
 <p class="sub">Son 12 preguntas rápidas. ¡Gracias por ayudarnos!</p>
 <div class="bar" hidden><div><i id="pb"></i></div></div>
-<section class="q" id="nm"><h2>Tu nombre</h2><p class="hint">Escribe tu nombre para empezar.</p><input id="nombre" type="text" maxlength="60" autocomplete="given-name"></section>
+<section class="q" id="nm"><h2>Tu nombre</h2><p class="hint">Escribe tu nombre para empezar.</p><input id="nombre" type="text" maxlength="60" autocomplete="given-name"><p id="nmerr" style="color:#b3261e;margin:8px 0 0" hidden>Escribe tu nombre para continuar.</p></section>
 <button id="go">Continuar</button>
 <form id="f" onsubmit="return false" hidden></form>
 <button id="send" hidden>Enviar respuestas</button>
 <div class="end" id="end" hidden></div>
+<p style="color:#9aa0a6;font-size:12px;text-align:center;margin-top:30px">v3</p>
 </main>
 <script>
 const Q=[
@@ -99,7 +100,7 @@ f.addEventListener("change",e=>{
  upd()});
 const go=document.getElementById("go"),nmS=document.getElementById("nm"),nmI=document.getElementById("nombre");
 function empezar(){
- if(!nmI.value.trim()){nmS.classList.add("err");nmI.focus();return}
+ if(!nmI.value.trim()){nmS.classList.add("err");document.getElementById("nmerr").hidden=false;nmI.focus();return}
  nmS.hidden=true;go.hidden=true;document.querySelector(".bar").hidden=false;f.hidden=false;send.hidden=false;window.scrollTo({top:0})}
 go.onclick=empezar;
 nmI.addEventListener("keydown",e=>{if(e.key==="Enter")empezar()});
